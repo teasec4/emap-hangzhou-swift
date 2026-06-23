@@ -22,7 +22,7 @@ struct ContentView: View {
     var body: some View {
         VStack{
             MapView(viewModel: mapViewModel)
-        }а
+        }
         .sheet(isPresented: $isPresented){
             panelContentBuilder
             .presentationDetents([ .height(80), .medium, .large], selection: $selectedDetent)
@@ -47,10 +47,14 @@ struct ContentView: View {
     private var panelContentBuilder: some View{
         switch panelContent {
         case .recommendation:
-            WorkspacePanel(selectedDetent: $selectedDetent, content: RecommendationContent(recommendations: MockRecommendation.samples, onRoute: { recommendation in
-                
-                mapViewModel.routeService.openInAppleMaps(to: recommendation.place)
-            }))
+            let userCoord = mapViewModel.locationService.currentLocation?.coordinate
+            WorkspacePanel(selectedDetent: $selectedDetent, content: RecommendationContent(
+                places: mapViewModel.places,
+                userCoordinate: userCoord,
+                onRoute: { place in
+                    mapViewModel.routeService.openInAppleMaps(to: place)
+                }
+            ))
         case .place(let place):
             WorkspacePanel(
                 selectedDetent: $selectedDetent,
@@ -75,7 +79,9 @@ private struct WorkspacePanel<Content: View>: View {
 
     var body: some View {
         if selectedDetent == .height(80){
-            SheetButton()
+            SheetButton(onTap: {
+                selectedDetent = .medium
+            })
         } else{
             VStack(spacing: 14) {
                 Capsule()
@@ -100,93 +106,116 @@ private struct WorkspacePanel<Content: View>: View {
 }
 
 private struct RecommendationContent: View {
-    let recommendations: [MockRecommendation]
-    let onRoute: (MockRecommendation) -> Void
-    
+    let places: [Place]
+    let userCoordinate: CLLocationCoordinate2D?
+    let onRoute: (Place) -> Void
+
+    private var sortedPlaces: [Place] {
+        guard let user = userCoordinate else { return Array(places.prefix(10)) }
+        let userLoc = CLLocation(latitude: user.latitude, longitude: user.longitude)
+        return places
+            .map { (place: $0, distance: CLLocation(latitude: $0.latitude, longitude: $0.longitude).distance(from: userLoc)) }
+            .sorted { $0.distance < $1.distance }
+            .prefix(10)
+            .map(\.place)
+    }
+
     var body: some View {
-        LazyVStack(spacing: 10) {
-            ForEach(recommendations) { recommendation in
-                RecommendationCard(recommendation: recommendation) {
-                    onRoute(recommendation)
+        if places.isEmpty {
+            VStack(spacing: 8) {
+                Image(systemName: "mappin.slash")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                Text("No places nearby yet")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 24)
+        } else {
+            LazyVStack(spacing: 10) {
+                ForEach(sortedPlaces) { place in
+                    PlaceCard(place: place, distance: distanceString(for: place)) {
+                        onRoute(place)
+                    }
                 }
             }
+            .padding(.bottom, 14)
         }
-        .padding(.bottom, 14)
+    }
+
+    private func distanceString(for place: Place) -> String {
+        guard let user = userCoordinate else { return "" }
+        let userLoc = CLLocation(latitude: user.latitude, longitude: user.longitude)
+        let placeLoc = CLLocation(latitude: place.latitude, longitude: place.longitude)
+        let meters = userLoc.distance(from: placeLoc)
+        if meters < 1000 {
+            return "\(Int(meters)) m"
+        } else {
+            return String(format: "%.1f km", meters / 1000)
+        }
     }
 }
 
-private struct SheetButton: View{
-    
-    var body: some View{
-        HStack{
-            
-            Button("Grab Food"){
-                
-            }
-            
-            Button("Go Outside"){
-                
-            }
-            
-            Button("What's new"){
-                
-            }
-            
+private struct SheetButton: View {
+    let onTap: () -> Void
+
+    var body: some View {
+        Button {
+            onTap()
+        } label: {
+            Label("Show nearby", systemImage: "list.bullet")
+                .font(.subheadline)
+                .fontWeight(.bold)
         }
-        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
 
 
-private struct RecommendationCard: View {
-    let recommendation: MockRecommendation
+private struct PlaceCard: View {
+    let place: Place
+    let distance: String
     let onRoute: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 10) {
-                Image(systemName: recommendation.category.iconName)
+                Image(systemName: place.category.iconName)
                     .font(.headline)
                     .foregroundStyle(.white)
                     .frame(width: 34, height: 34)
-                    .background(recommendation.category.color, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .background(place.category.color, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(recommendation.title)
+                    Text(place.title)
                         .font(.headline)
                         .lineLimit(1)
 
-                    Text(recommendation.tagline)
+                    Text(place.category.displayName)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
                 }
 
                 Spacer()
 
-                Label(recommendation.rating, systemImage: "star.fill")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.yellow)
+                if !distance.isEmpty {
+                    Label(distance, systemImage: "figure.walk")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
-            Text(recommendation.description)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
-
-            HStack(spacing: 10) {
-                Label(recommendation.distance, systemImage: "figure.walk")
-                    .font(.caption)
+            if !place.note.isEmpty {
+                Text(place.note)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
 
-                Label(recommendation.price, systemImage: "creditcard")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
+            HStack {
                 Spacer()
-
                 Button(action: onRoute) {
                     Label("Route", systemImage: "arrow.triangle.turn.up.right.diamond.fill")
                         .font(.subheadline)

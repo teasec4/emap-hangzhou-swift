@@ -19,6 +19,7 @@ struct MapView: View {
 
     var body: some View {
         MapReader { proxy in
+            // через селкшн передаем Плейс
             Map(position: $viewModel.cameraPosition, selection: $viewModel.selectedPlace) {
                 UserAnnotation()
 
