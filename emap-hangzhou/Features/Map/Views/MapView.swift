@@ -10,7 +10,7 @@ import SwiftData
 struct MapView: View {
     @State var viewModel: MapViewModel
 
-    // тут будем получать места с АПИ сервака
+    // тут будем получать места с АПИ сервака или из кеша
     @Query(sort: \Place.createdAt) private var places: [Place]
 
     init(viewModel: MapViewModel) {
@@ -25,6 +25,9 @@ struct MapView: View {
                 ForEach(places) { place in
                     Annotation(coordinate: place.coordinate) {
                         PlaceMarker(place: place)
+                            .onTapGesture {
+                                viewModel.selectedPlace = place
+                            }
                     } label: {
                         Text(place.title)
                     }
@@ -41,15 +44,6 @@ struct MapView: View {
             viewModel.centerOnUserLocation(coordinate)
         }
 
-        // тут открывается описание места
-        .sheet(item: $viewModel.selectedPlace) { place in
-            PlaceRecommendationSheet(
-                place: place,
-                routeService: viewModel.routeService
-            )
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
-        }
     }
 
 }

@@ -9,129 +9,129 @@ import CoreLocation
 
 struct ContentView: View {
     @State var mapViewModel: MapViewModel
-    @State private var workspaceDetent: WorkspaceDetent = .collapsed
-    @State var searchInput: String = ""
+    
+    @State var isPresented: Bool = true
+    @State private var selectedDetent: PresentationDetent = .height(80)
+    
+    @State private var panelContent: PanelContentType = .recommendation
+    
 
     init(mapViewModel: MapViewModel) {
         _mapViewModel = State(initialValue: mapViewModel)
     }
 
     var body: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .bottom) {
-                MapView(viewModel: mapViewModel)
-
-                // защита карты чтобы она не скролилась когда меню expanded
-                if workspaceDetent == .expanded {
-                    Color.clear
-                        .contentShape(Rectangle())
-                        .ignoresSafeArea()
-                        .onTapGesture {
-                            setWorkspaceDetent(.collapsed)
-                        }
-                }
-
-                WorkspacePanel(
-                    recommendations: MockRecommendation.samples,
-                    onExpand: {
-                        guard workspaceDetent == .collapsed else { return }
-                        setWorkspaceDetent(.expanded)
-                    },
-                    onDragEnded: handleWorkspaceDrag,
-                    onRoute: { recommendation in
-                        mapViewModel.routeService.openInAppleMaps(to: recommendation.place)
-                    },
-                    searchInput: $searchInput
-                )
-                .ignoresSafeArea(edges: .bottom)
-                .frame(maxWidth: .infinity)
-                .frame(height: geometry.size.height * workspaceDetent.heightFraction)
+        VStack{
+            // надо колбек с карты на выбор места?! 
+            MapView(viewModel: mapViewModel)
+        }
+        .sheet(isPresented: $isPresented){
+            
+            panelContentBuilder
+            .presentationDetents([ .height(80), .medium, .large], selection: $selectedDetent)
+            .presentationBackgroundInteraction(.enabled)
+            .interactiveDismissDisabled()
+            .onAppear{
+                panelContent = .recommendation
             }
         }
+        
     }
-
-    // хандлер для expand
-    private func handleWorkspaceDrag(_ value: DragGesture.Value) {
-        let verticalMovement = value.predictedEndTranslation.height
-
-        if verticalMovement > 80 {
-            setWorkspaceDetent(.collapsed)
-        } else if verticalMovement < -80 {
-            setWorkspaceDetent(.expanded)
+    
+    @ViewBuilder
+    private var panelContentBuilder: some View{
+        switch panelContent {
+        case .recommendation:
+            WorkspacePanel(selectedDetent: $selectedDetent, content: RecommendationContent(recommendations: MockRecommendation.samples, onRoute: { recommendation in
+                
+                mapViewModel.routeService.openInAppleMaps(to: recommendation.place)
+            }))
+        case .place:
+            WorkspacePanel(
+                selectedDetent: $selectedDetent,
+                content: PlaceRecommendationSheet(place: mapViewModel.selectedPlace!, routeService: mapViewModel.routeService)
+            )
         }
     }
 
-    private func setWorkspaceDetent(_ detent: WorkspaceDetent) {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.86)) {
-            workspaceDetent = detent
+}
+
+private struct WorkspacePanel<Content: View>: View {
+    let content:Content
+    @Binding var selectedDetent: PresentationDetent
+    
+    init(
+        selectedDetent: Binding<PresentationDetent>,
+        content: Content
+    ){
+        self._selectedDetent = selectedDetent
+        self.content = content
+    }
+
+    var body: some View {
+        if selectedDetent == .height(80){
+            SheetButton()
+        } else{
+            VStack(spacing: 14) {
+                Capsule()
+                    .fill(.secondary.opacity(0.35))
+                    .frame(width: 40, height: 5)
+                    .padding(.top, 4)
+
+                ScrollView(showsIndicators: false) {
+                    content
+                    
+                }
+            }
+
+            .padding(.horizontal, 16)
+            .safeAreaPadding(.bottom)
+            .padding(.bottom, 14)
+            .background(.regularMaterial)
         }
+        
+
     }
 }
 
-private struct WorkspacePanel: View {
+private struct RecommendationContent: View {
     let recommendations: [MockRecommendation]
-    let onExpand: () -> Void
-    let onDragEnded: (DragGesture.Value) -> Void
     let onRoute: (MockRecommendation) -> Void
-    @Binding var searchInput: String
-
+    
     var body: some View {
-        VStack(spacing: 14) {
-            Capsule()
-                .fill(.secondary.opacity(0.35))
-                .frame(width: 40, height: 5)
-                .padding(.top, 4)
-
-            SearchPlaceholder(searchInput: $searchInput)
-
-            ScrollView(showsIndicators: false) {
-                LazyVStack(spacing: 10) {
-                    ForEach(recommendations) { recommendation in
-                        RecommendationCard(recommendation: recommendation) {
-                            onRoute(recommendation)
-                        }
-                    }
+        LazyVStack(spacing: 10) {
+            ForEach(recommendations) { recommendation in
+                RecommendationCard(recommendation: recommendation) {
+                    onRoute(recommendation)
                 }
-                .padding(.bottom, 14)
             }
         }
-
-        .padding(.horizontal, 16)
-        .safeAreaPadding(.bottom)
         .padding(.bottom, 14)
-        .background(.regularMaterial)
-
-
-        .onTapGesture(perform: onExpand)
-        .gesture(
-            DragGesture()
-                .onEnded { value in
-                    onDragEnded(value)
-                }
-        )
     }
 }
 
-private struct SearchPlaceholder: View {
-    @Binding var searchInput: String
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-
-            TextField("Search places", text: $searchInput)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            Spacer()
-
-
+private struct SheetButton: View{
+    
+    var body: some View{
+        HStack{
+            
+            Button("Grab Food"){
+                
+            }
+            
+            Button("Go Outside"){
+                
+            }
+            
+            Button("What's new"){
+                
+            }
+            
         }
-        .padding(.horizontal, 12)
-        .frame(height: 44)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .padding()
     }
 }
+
 
 
 private struct RecommendationCard: View {
@@ -255,16 +255,9 @@ private struct MockRecommendation: Identifiable {
     ]
 }
 
-private enum WorkspaceDetent {
-    case collapsed
-    case expanded
-
-    var heightFraction: CGFloat {
-        switch self {
-        case .collapsed: return 0.28
-        case .expanded:  return 0.66
-        }
-    }
+enum PanelContentType{
+    case recommendation
+    case place(place: Place)
 }
 
 //#Preview {
