@@ -10,8 +10,8 @@ import SwiftData
 struct MapView: View {
     @State var viewModel: MapViewModel
 
-    // тут будем получать места с АПИ сервака или из кеша
-    @Query(sort: \Place.createdAt) private var places: [Place]
+    // SwiftData: kept for future local persistence, not displayed yet
+    @Query(sort: \Place.createdAt) private var localPlaces: [Place]
 
     init(viewModel: MapViewModel) {
         _viewModel = State(initialValue: viewModel)
@@ -22,12 +22,10 @@ struct MapView: View {
             Map(position: $viewModel.cameraPosition, selection: $viewModel.selectedPlace) {
                 UserAnnotation()
 
-                ForEach(places) { place in
+                // Show server-fetched places
+                ForEach(viewModel.places) { place in
                     Annotation(coordinate: place.coordinate) {
                         PlaceMarker(place: place)
-                            .onTapGesture {
-                                viewModel.selectedPlace = place
-                            }
                     } label: {
                         Text(place.title)
                     }
@@ -35,17 +33,18 @@ struct MapView: View {
                 }
             }
             .mapStyle(.standard(pointsOfInterest: .excludingAll))
-
         }
-
-        // для отслеживания локации
         .onChange(of: viewModel.locationService.currentLocation?.coordinate) { _, coordinate in
             guard let coordinate, !viewModel.didCenterOnUserLocation else { return }
             viewModel.centerOnUserLocation(coordinate)
         }
-
+        .task {
+            viewModel.startPolling()
+        }
+        .onDisappear {
+            viewModel.stopPolling()
+        }
     }
-
 }
 
 #Preview {

@@ -33,6 +33,7 @@ final class Place {
     }
 
     init(
+        id: UUID? = nil,
         title: String,
         note: String = "",
         latitude: Double,
@@ -40,7 +41,7 @@ final class Place {
         category: PlaceCategory,
         createdAt: Date = .now
     ) {
-        self.id = UUID()
+        self.id = id ?? UUID()
         self.title = title
         self.note = note
         self.latitude = latitude

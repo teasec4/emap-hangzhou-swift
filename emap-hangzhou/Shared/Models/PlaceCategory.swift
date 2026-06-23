@@ -37,4 +37,18 @@ enum PlaceCategory: String, Codable, CaseIterable {
         case .exhibition:   return .purple
         }
     }
+
+    /// Map backend type string to mobile PlaceCategory.
+    static func mapFromServer(_ serverType: String) -> PlaceCategory {
+        switch serverType.lowercased() {
+        case "restaurant", "cafe":
+            return .food
+        case "viewpoint", "park":
+            return .scenery
+        case "museum":
+            return .exhibition
+        default:
+            return .scenery
+        }
+    }
 }

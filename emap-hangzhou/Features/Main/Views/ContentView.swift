@@ -14,7 +14,6 @@ struct ContentView: View {
     @State private var selectedDetent: PresentationDetent = .height(80)
     
     @State private var panelContent: PanelContentType = .recommendation
-    
 
     init(mapViewModel: MapViewModel) {
         _mapViewModel = State(initialValue: mapViewModel)
@@ -22,11 +21,9 @@ struct ContentView: View {
 
     var body: some View {
         VStack{
-            // надо колбек с карты на выбор места?! 
             MapView(viewModel: mapViewModel)
-        }
+        }а
         .sheet(isPresented: $isPresented){
-            
             panelContentBuilder
             .presentationDetents([ .height(80), .medium, .large], selection: $selectedDetent)
             .presentationBackgroundInteraction(.enabled)
@@ -35,7 +32,15 @@ struct ContentView: View {
                 panelContent = .recommendation
             }
         }
-        
+        .onChange(of: mapViewModel.selectedPlace) { _, place in
+            if let place {
+                panelContent = .place(place: place)
+                selectedDetent = .medium
+            } else {
+                panelContent = .recommendation
+                selectedDetent = .height(80)
+            }
+        }
     }
     
     @ViewBuilder
@@ -46,10 +51,10 @@ struct ContentView: View {
                 
                 mapViewModel.routeService.openInAppleMaps(to: recommendation.place)
             }))
-        case .place:
+        case .place(let place):
             WorkspacePanel(
                 selectedDetent: $selectedDetent,
-                content: PlaceRecommendationSheet(place: mapViewModel.selectedPlace!, routeService: mapViewModel.routeService)
+                content: PlaceRecommendationSheet(place: place, routeService: mapViewModel.routeService)
             )
         }
     }
