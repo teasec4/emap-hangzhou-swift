@@ -14,45 +14,26 @@ extension CLLocationCoordinate2D: @retroactive Equatable {
 }
 
 @main
+@MainActor
 struct emap_hangzhouApp: App {
-    @State private var container = AppContainer()
-    @State private var state: AppState = .splash
+    @State private var dependencies: AppDependencies
+
+    init(){
+        do{
+            let dependencies = try AppDependencies.live()
+            _dependencies = State(initialValue: dependencies)
+
+        } catch {
+            fatalError("Failed to create app dependencies: \(error)")
+        }
+    }
+
 
     var body: some Scene {
         WindowGroup {
-            ZStack {
-                switch state {
-                case .splash:
-                    SplashView()
-                case .main(let coordinate):
-                    ContentView(initialCoordinate: coordinate)
-                }
-            }
-            .environment(container)
-            .onAppear {
-                container.locationService.onLocationReceived = { coordinate in
-                    withAnimation(.easeInOut(duration: 0.4)) {
-                        state = .main(coordinate)
-                    }
-                }
-                container.locationService.requestLocation()
-                Task {
-                    try? await Task.sleep(for: .seconds(3))
-                    if case .splash = state {
-                        withAnimation(.easeInOut(duration: 0.4)) {
-                            state = .main(nil)
-                        }
-                    }
-                }
-            }
+            RootView(appDependencies: dependencies)
         }
-        .modelContainer(for: Place.self)
+        .modelContainer(dependencies.modelContainer)
+
     }
-}
-
-// MARK: - App State
-
-enum AppState: Equatable {
-    case splash
-    case main(CLLocationCoordinate2D?)
 }

@@ -17,19 +17,42 @@ struct RouteService {
     }
 
     func openInAMap(to place: Place) {
-        let lat = place.latitude
-        let lon = place.longitude
-        let name = place.title
-            .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "destination"
+        guard let appURL = amapAppURL(for: place) else { return }
 
-        let schemeURL = "iosamap://navi?sourceApplication=emap-hangzhou&lat=\(lat)&lon=\(lon)&dev=0&style=2"
-        let webURL = "https://uri.amap.com/navigation?to=\(lon),\(lat),\(name)&mode=car"
-
-        if let url = URL(string: schemeURL), UIApplication.shared.canOpenURL(url) {
-            UIApplication.shared.open(url)
-        } else if let url = URL(string: webURL) {
-            UIApplication.shared.open(url)
+        UIApplication.shared.open(appURL) { isOpened in
+            guard !isOpened, let webURL = amapWebURL(for: place) else { return }
+            UIApplication.shared.open(webURL)
         }
+    }
+
+    private func amapAppURL(for place: Place) -> URL? {
+        var components = URLComponents()
+        components.scheme = "iosamap"
+        components.host = "navi"
+        components.queryItems = [
+            URLQueryItem(name: "sourceApplication", value: "emap-hangzhou"),
+            URLQueryItem(name: "poiname", value: place.title),
+            URLQueryItem(name: "lat", value: String(place.latitude)),
+            URLQueryItem(name: "lon", value: String(place.longitude)),
+            URLQueryItem(name: "dev", value: "0"),
+            URLQueryItem(name: "style", value: "2")
+        ]
+
+        return components.url
+    }
+
+    private func amapWebURL(for place: Place) -> URL? {
+        var components = URLComponents(string: "https://uri.amap.com/navigation")
+        components?.queryItems = [
+            URLQueryItem(
+                name: "to",
+                value: "\(place.longitude),\(place.latitude),\(place.title)"
+            ),
+            URLQueryItem(name: "mode", value: "car"),
+            URLQueryItem(name: "src", value: "emap-hangzhou")
+        ]
+
+        return components?.url
     }
 
     private func mapItem(for place: Place) -> MKMapItem {

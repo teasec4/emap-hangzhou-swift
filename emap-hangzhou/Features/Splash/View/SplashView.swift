@@ -26,10 +26,10 @@ struct SplashView: View {
                     .fontWeight(.bold)
                     .opacity(opacity)
 
-                
+
             }
         }
-        .onAppear {
+        .task {
             withAnimation(.spring(duration: 0.8, bounce: 0.5)) {
                 isAnimating = true
             }
