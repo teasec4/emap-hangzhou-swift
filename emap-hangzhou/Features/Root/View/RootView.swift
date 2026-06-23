@@ -25,10 +25,7 @@ struct RootView: View{
                     rootState = .main
                 }
         case .main:
-            ContentView(mapViewModel: MapViewModel(
-                routeService: appDependencies.routeService,
-                locationService: appDependencies.locationService
-            ))
+            ContentView(mapViewModel: appDependencies.makeMapViewModel())
         }
     }
 }

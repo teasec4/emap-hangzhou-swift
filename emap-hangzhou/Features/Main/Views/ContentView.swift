@@ -51,8 +51,13 @@ struct ContentView: View {
             WorkspacePanel(selectedDetent: $selectedDetent, content: RecommendationContent(
                 places: mapViewModel.places,
                 userCoordinate: userCoord,
-                onRoute: { place in
-                    mapViewModel.routeService.openInAppleMaps(to: place)
+                onRoute: { place, type in
+                    switch type {
+                    case .apple:
+                        mapViewModel.routeService.openInAppleMaps(to: place)
+                    case .amap:
+                        mapViewModel.routeService.openInAMap(to: place)
+                    }
                 }
             ))
         case .place(let place):
@@ -108,7 +113,9 @@ private struct WorkspacePanel<Content: View>: View {
 private struct RecommendationContent: View {
     let places: [Place]
     let userCoordinate: CLLocationCoordinate2D?
-    let onRoute: (Place) -> Void
+    let onRoute: (Place, MapType) -> Void
+
+    enum MapType { case apple, amap }
 
     private var sortedPlaces: [Place] {
         guard let user = userCoordinate else { return Array(places.prefix(10)) }
@@ -135,9 +142,10 @@ private struct RecommendationContent: View {
         } else {
             LazyVStack(spacing: 10) {
                 ForEach(sortedPlaces) { place in
-                    PlaceCard(place: place, distance: distanceString(for: place)) {
-                        onRoute(place)
-                    }
+                    PlaceCard(place: place, distance: distanceString(for: place),
+                        onAppleMaps: { onRoute(place, .apple) },
+                        onAMap: { onRoute(place, .amap) }
+                    )
                 }
             }
             .padding(.bottom, 14)
@@ -161,14 +169,11 @@ private struct SheetButton: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button {
+        Button("Show nearby") {
             onTap()
-        } label: {
-            Label("Show nearby", systemImage: "list.bullet")
-                .font(.subheadline)
-                .fontWeight(.bold)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .buttonStyle(.plain)
+        
     }
 }
 
@@ -177,7 +182,8 @@ private struct SheetButton: View {
 private struct PlaceCard: View {
     let place: Place
     let distance: String
-    let onRoute: () -> Void
+    let onAppleMaps: () -> Void
+    let onAMap: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -216,7 +222,14 @@ private struct PlaceCard: View {
 
             HStack {
                 Spacer()
-                Button(action: onRoute) {
+                Menu {
+                    Button(action: onAppleMaps) {
+                        Label("Apple Maps", systemImage: "map")
+                    }
+                    Button(action: onAMap) {
+                        Label("AMap", systemImage: "location.north.line")
+                    }
+                } label: {
                     Label("Route", systemImage: "arrow.triangle.turn.up.right.diamond.fill")
                         .font(.subheadline)
                         .fontWeight(.bold)
@@ -294,7 +307,8 @@ enum PanelContentType{
     case place(place: Place)
 }
 
-//#Preview {
-//    ContentView()
-//
-//}
+#Preview {
+    let deps = AppDependencies.mock
+    return ContentView(mapViewModel: deps.makeMapViewModel())
+        .modelContainer(deps.modelContainer)
+}

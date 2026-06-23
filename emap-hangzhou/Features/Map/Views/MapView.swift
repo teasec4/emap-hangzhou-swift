@@ -49,9 +49,7 @@ struct MapView: View {
 }
 
 #Preview {
-    MapView(viewModel: MapViewModel(
-        routeService: RouteService(),
-        locationService: LocationService()
-    ))
-    .modelContainer(for: Place.self, inMemory: true)
+    let deps = AppDependencies.mock
+    return MapView(viewModel: deps.makeMapViewModel())
+        .modelContainer(deps.modelContainer)
 }

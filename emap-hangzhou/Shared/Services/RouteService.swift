@@ -9,35 +9,37 @@ import UIKit
 struct RouteService {
 
     func openInAppleMaps(to place: Place) {
-        let mapItem = mapItem(for: place)
-        mapItem.name = place.title
-        mapItem.openInMaps(launchOptions: [
-            MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving
-        ])
+        // Direct deep link: opens Apple Maps immediately
+        let urlString = "maps://?daddr=\(place.latitude),\(place.longitude)&dirflg=d"
+        guard let url = URL(string: urlString) else { return }
+        UIApplication.shared.open(url)
     }
 
     func openInAMap(to place: Place) {
+        // Direct deep link via iosamap:// scheme
         guard let appURL = amapAppURL(for: place) else { return }
-
         UIApplication.shared.open(appURL) { isOpened in
+            // Fallback: if AMap not installed, open in browser
             guard !isOpened, let webURL = amapWebURL(for: place) else { return }
             UIApplication.shared.open(webURL)
         }
     }
 
+    // MARK: - AMap URL builders
+
     private func amapAppURL(for place: Place) -> URL? {
+        // iosamap://path?sourceApplication=...&dlat=...&dlon=...&dname=...&dev=0&t=0
         var components = URLComponents()
         components.scheme = "iosamap"
-        components.host = "navi"
+        components.host = "path"
         components.queryItems = [
             URLQueryItem(name: "sourceApplication", value: "emap-hangzhou"),
-            URLQueryItem(name: "poiname", value: place.title),
-            URLQueryItem(name: "lat", value: String(place.latitude)),
-            URLQueryItem(name: "lon", value: String(place.longitude)),
+            URLQueryItem(name: "dlat", value: String(place.latitude)),
+            URLQueryItem(name: "dlon", value: String(place.longitude)),
+            URLQueryItem(name: "dname", value: place.title),
             URLQueryItem(name: "dev", value: "0"),
-            URLQueryItem(name: "style", value: "2")
+            URLQueryItem(name: "t", value: "0")
         ]
-
         return components.url
     }
 
@@ -51,21 +53,6 @@ struct RouteService {
             URLQueryItem(name: "mode", value: "car"),
             URLQueryItem(name: "src", value: "emap-hangzhou")
         ]
-
         return components?.url
-    }
-
-    private func mapItem(for place: Place) -> MKMapItem {
-        let location = CLLocation(
-            latitude: place.latitude,
-            longitude: place.longitude
-        )
-
-        if #available(iOS 26.0, *) {
-            return MKMapItem(location: location, address: nil)
-        }
-
-        let placemark = MKPlacemark(coordinate: place.coordinate)
-        return MKMapItem(placemark: placemark)
     }
 }

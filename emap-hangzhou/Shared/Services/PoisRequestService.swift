@@ -7,7 +7,7 @@
 
 import Foundation
 
-final class PoisRequestService {
+class PoisRequestService {
     private let baseURL: String
     private let session: URLSession
     private let decoder: JSONDecoder
