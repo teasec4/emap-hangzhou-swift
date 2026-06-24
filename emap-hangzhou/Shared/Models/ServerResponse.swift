@@ -19,6 +19,23 @@ struct ServerPlace: Codable {
     let createdAt: String
     let updatedAt: String
 
+    enum CodingKeys: String, CodingKey {
+        case id, name, category, subcategory, lat, lng, comment, createdAt, updatedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        category = try container.decode(String.self, forKey: .category)
+        subcategory = try container.decodeIfPresent(String.self, forKey: .subcategory)
+        lat = try container.decode(Double.self, forKey: .lat)
+        lng = try container.decode(Double.self, forKey: .lng)
+        comment = try container.decodeIfPresent(String.self, forKey: .comment) ?? ""
+        createdAt = try container.decode(String.self, forKey: .createdAt)
+        updatedAt = try container.decode(String.self, forKey: .updatedAt)
+    }
+
     /// Convert to local Place model for display.
     func toPlace() -> Place {
         let cat = PlaceCategory.mapFromServer(category)
