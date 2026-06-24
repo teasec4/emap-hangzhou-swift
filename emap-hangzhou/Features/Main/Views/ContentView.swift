@@ -20,9 +20,30 @@ struct ContentView: View {
     }
 
     var body: some View {
-        VStack{
+        ZStack {
             MapView(viewModel: mapViewModel)
+
+            // Loading overlay — shown until first data arrives
+            if mapViewModel.isLoading {
+                VStack {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                        Text("Loading interesting places...")
+                            .font(.subheadline)
+                            .foregroundStyle(.primary)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .padding(.top, 60)
+
+                    Spacer()
+                }
+                .transition(.opacity)
+            }
         }
+        .animation(.easeInOut(duration: 0.3), value: mapViewModel.isLoading)
         .sheet(isPresented: $isPresented){
             panelContentBuilder
             .presentationDetents([ .height(80), .medium, .large], selection: $selectedDetent)
@@ -281,7 +302,7 @@ private struct MockRecommendation: Identifiable {
             title: "Liangzhu Museum",
             tagline: "Design, history, soft light",
             description: "A clean museum route for a slow afternoon: architecture, artifacts, and a good coffee stop nearby.",
-            category: .exhibition,
+            category: .culture,
             rating: "4.7",
             distance: "28 min",
             price: "Low",
@@ -292,7 +313,7 @@ private struct MockRecommendation: Identifiable {
             title: "Alibaba Xixi Campus",
             tagline: "Tech landmark in Hangzhou",
             description: "Useful for first-time visitors who want to understand the city through its modern tech side.",
-            category: .technology,
+            category: .culture,
             rating: "4.6",
             distance: "35 min",
             price: "Free",

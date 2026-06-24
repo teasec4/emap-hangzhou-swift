@@ -40,11 +40,10 @@ final class MapViewModel {
     // MARK: - Server sync
 
     func startPolling() {
-        pollingTask?.cancel()
+        guard pollingTask == nil else { return } // already running
+        isLoading = true
         pollingTask = Task {
-            // Initial fetch
             await fetchPlaces()
-            // Then poll every 5 seconds
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(5))
                 await fetchPlaces()
@@ -61,12 +60,18 @@ final class MapViewModel {
         do {
             let serverPlaces = try await poisService.fetchPlaces()
             let mapped = serverPlaces.map { $0.toPlace() }
-            // Only update if data changed (compare counts as cheap heuristic)
             if mapped.count != places.count || hasChanges(mapped) {
                 places = mapped
             }
+            // First successful load — hide loading
+            if isLoading {
+                isLoading = false
+            }
         } catch {
-            // Silent — server might be unreachable, keep cached data
+            // Keep cached data; hide loading after first attempt even on failure
+            if isLoading {
+                isLoading = false
+            }
             print("[emap] fetch failed: \(error.localizedDescription)")
         }
     }

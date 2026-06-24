@@ -15,21 +15,21 @@ final class Place {
     var latitude: Double
     var longitude: Double
     var categoryRawValue: String
+    var subcategoryRawValue: String?
+
     var createdAt: Date
 
-    // MARK: - Future expansion (not yet implemented)
-    // var photos: [Data]?
-    // var rating: Int?
-    // var tags: [String]?
-    // var isVisited: Bool
-    // var link: URL?
-    // var city: String?
-    // var country: String?
-    // var collectionName: String?
-
     var category: PlaceCategory {
-        get { PlaceCategory(rawValue: categoryRawValue) ?? .scenery }
+        get { PlaceCategory(rawValue: categoryRawValue) ?? .nature }
         set { categoryRawValue = newValue.rawValue }
+    }
+
+    var subcategory: PlaceSubcategory? {
+        get {
+            guard let raw = subcategoryRawValue else { return nil }
+            return PlaceSubcategory(rawValue: raw)
+        }
+        set { subcategoryRawValue = newValue?.rawValue }
     }
 
     init(
@@ -39,6 +39,7 @@ final class Place {
         latitude: Double,
         longitude: Double,
         category: PlaceCategory,
+        subcategory: PlaceSubcategory? = nil,
         createdAt: Date = .now
     ) {
         self.id = id ?? UUID()
@@ -47,6 +48,7 @@ final class Place {
         self.latitude = latitude
         self.longitude = longitude
         self.categoryRawValue = category.rawValue
+        self.subcategoryRawValue = subcategory?.rawValue
         self.createdAt = createdAt
     }
 

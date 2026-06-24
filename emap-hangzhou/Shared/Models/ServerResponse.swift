@@ -11,7 +11,8 @@ import Foundation
 struct ServerPlace: Codable {
     let id: String
     let name: String
-    let type: String
+    let category: String
+    let subcategory: String?
     let lat: Double
     let lng: Double
     let comment: String
@@ -20,13 +21,20 @@ struct ServerPlace: Codable {
 
     /// Convert to local Place model for display.
     func toPlace() -> Place {
-        Place(
+        let cat = PlaceCategory.mapFromServer(category)
+        let sub: PlaceSubcategory? = if let raw = subcategory, !raw.isEmpty {
+            PlaceSubcategory(rawValue: raw)
+        } else {
+            nil
+        }
+        return Place(
             id: UUID(uuidString: id),
             title: name,
             note: comment,
             latitude: lat,
             longitude: lng,
-            category: PlaceCategory.mapFromServer(type),
+            category: cat,
+            subcategory: sub,
             createdAt: ISO8601DateFormatter().date(from: createdAt) ?? .now
         )
     }

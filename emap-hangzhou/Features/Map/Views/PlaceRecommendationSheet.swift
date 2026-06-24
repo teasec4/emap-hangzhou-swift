@@ -26,7 +26,7 @@ struct PlaceRecommendationSheet: View {
                         .fontWeight(.bold)
                         .lineLimit(2)
 
-                    Label(place.category.displayName, systemImage: "mappin.circle")
+                    Label(categoryLabel, systemImage: "mappin.circle")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -81,6 +81,13 @@ struct PlaceRecommendationSheet: View {
         .padding(24)
     }
 
+    private var categoryLabel: String {
+        if let sub = place.subcategory {
+            return "\(place.category.displayName) · \(sub.displayName)"
+        }
+        return place.category.displayName
+    }
+
     private var descriptionText: String {
         let trimmedNote = place.note.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedNote.isEmpty {
@@ -100,7 +107,8 @@ struct PlaceRecommendationSheet: View {
             note: "Quiet place by the water with a calm view and a simple tea menu.",
             latitude: 30.245,
             longitude: 120.13,
-            category: .food
+            category: .food,
+            subcategory: .chinese
         ),
         routeService: RouteService()
     )
