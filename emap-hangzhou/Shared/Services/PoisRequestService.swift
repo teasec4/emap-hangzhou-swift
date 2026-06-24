@@ -20,7 +20,6 @@ class PoisRequestService {
         self.session = session
 
         let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
         self.decoder = decoder
     }
 
