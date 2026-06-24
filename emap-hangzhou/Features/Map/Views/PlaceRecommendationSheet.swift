@@ -6,8 +6,6 @@
 import SwiftUI
 
 struct PlaceRecommendationSheet: View {
-    @Environment(\.dismiss) private var dismiss
-
     let place: Place
     let routeService: RouteService
 
@@ -63,7 +61,6 @@ struct PlaceRecommendationSheet: View {
             HStack(spacing: 12) {
                 Button("Apple Maps") {
                     routeService.openInAppleMaps(to: place)
-                    dismiss()
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
@@ -72,7 +69,6 @@ struct PlaceRecommendationSheet: View {
 
                 Button("AMap") {
                     routeService.openInAMap(to: place)
-                    dismiss()
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.large)
