@@ -50,9 +50,26 @@ enum PlaceCategory: String, Codable, CaseIterable {
         }
     }
 
-    /// Map backend category string to PlaceCategory.
-    static func mapFromServer(_ serverCategory: String) -> PlaceCategory {
-        PlaceCategory(rawValue: serverCategory.lowercased()) ?? .nature
+    /// Map backend category/type string to PlaceCategory.
+    /// Accepts both new categories (food, coffee, ...) and legacy types (restaurant, cafe, viewpoint, museum, park).
+    static func mapFromServer(_ serverValue: String) -> PlaceCategory {
+        switch serverValue.lowercased() {
+        // New categories
+        case "food":      return .food
+        case "coffee":    return .coffee
+        case "sport":     return .sport
+        case "relax":     return .relax
+        case "shopping":  return .shopping
+        case "culture":   return .culture
+        case "nature":    return .nature
+        // Legacy types
+        case "restaurant": return .food
+        case "cafe":       return .coffee
+        case "viewpoint":  return .culture
+        case "museum":     return .culture
+        case "park":       return .nature
+        default:           return .nature
+        }
     }
 }
 
