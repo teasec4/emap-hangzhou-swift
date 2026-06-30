@@ -36,6 +36,18 @@ struct ServerPlace: Codable {
         updatedAt = try container.decode(String.self, forKey: .updatedAt)
     }
 
+    init(id: String, name: String, category: String, subcategory: String?, lat: Double, lng: Double, comment: String, createdAt: String, updatedAt: String) {
+        self.id = id
+        self.name = name
+        self.category = category
+        self.subcategory = subcategory
+        self.lat = lat
+        self.lng = lng
+        self.comment = comment
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+
     /// Convert to local Place model for display.
     func toPlace() -> Place {
         let cat = PlaceCategory.mapFromServer(category)

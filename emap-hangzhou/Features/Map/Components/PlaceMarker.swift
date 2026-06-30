@@ -23,3 +23,25 @@ struct PlaceMarker: View {
         }
     }
 }
+
+struct ClusterMarker: View {
+    let cluster: PlaceCluster
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text("\(cluster.places.count)")
+                .font(.headline)
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .background(cluster.dominantCategory.color, in: Circle())
+                .overlay {
+                    Circle()
+                        .stroke(.white, lineWidth: 3)
+                }
+                .shadow(color: .black.opacity(0.18), radius: 8, y: 4)
+        }
+        .buttonStyle(.plain)
+    }
+}

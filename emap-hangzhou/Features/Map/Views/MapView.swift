@@ -23,23 +23,36 @@ struct MapView: View {
             Map(position: $viewModel.cameraPosition, selection: $viewModel.selectedPlace) {
                 UserAnnotation()
 
-                // Show server-fetched places
-                ForEach(viewModel.places) { place in
-                    Annotation(coordinate: place.coordinate) {
-                        PlaceMarker(place: place)
-                    } label: {
-                        Text(place.title)
+                ForEach(viewModel.placeClusters) { cluster in
+                    if let place = cluster.singlePlace {
+                        Annotation(coordinate: place.coordinate) {
+                            PlaceMarker(place: place)
+                        } label: {
+                            Text(place.title)
+                        }
+                        .tag(place)
+                    } else {
+                        Annotation(coordinate: cluster.coordinate) {
+                            ClusterMarker(cluster: cluster) {
+                                viewModel.focus(on: cluster)
+                            }
+                        } label: {
+                            Text("\(cluster.places.count) places")
+                        }
                     }
-                    .tag(place)
                 }
             }
             .mapStyle(.standard(pointsOfInterest: .excludingAll))
+            .onMapCameraChange(frequency: .onEnd) { context in
+                viewModel.updateVisibleRegion(context.region)
+            }
         }
         .onChange(of: viewModel.locationService.currentLocation?.coordinate) { _, coordinate in
             guard let coordinate, !viewModel.didCenterOnUserLocation else { return }
             viewModel.centerOnUserLocation(coordinate)
         }
         .task {
+            viewModel.requestUserLocation()
             viewModel.startPolling()
         }
         .onDisappear {
